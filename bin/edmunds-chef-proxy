@@ -1,0 +1,9 @@
+#!/usr/bin/env ruby
+
+begin
+  require "rubygems"
+rescue LoadError
+end
+
+require "edmunds/chef/proxy"
+Edmunds::Chef::Proxy.start
