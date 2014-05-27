@@ -15,7 +15,7 @@ module Edmunds
            opt :quiet, "Use minimal output", :short => 'q'
            opt :verbose, "Output diagnostic info", :short => 'v'
            opt :chef, "Chef host:port to redirect to", :type => String
-           opt :listen, "Local host:port to listen on", :type => String, :default => "0.0.0.0:80"
+           opt :listen, "Local host:port to listen on", :type => String, :default => "0.0.0.0:8080"
            opt :config, "Configuration file to load", :type => String #, :default => "/etc/edmunds-chef-proxy/config.yml"
         end
         Trollop::die :config, "file must exist" unless File.exist?(opts[:config]) if opts[:config]
