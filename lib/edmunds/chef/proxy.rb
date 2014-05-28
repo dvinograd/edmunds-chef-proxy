@@ -1,4 +1,5 @@
 require "edmunds/chef/proxy/version"
+require "edmunds/chef/proxy/settings"
 require "trollop"   # command-line option parser
 
 require "em-proxy"  # proxy library
@@ -12,16 +13,22 @@ module Edmunds
         # Parse options
         
         opts = Trollop::options do
-           opt :quiet, "Use minimal output", :short => 'q'
-           opt :verbose, "Output diagnostic info", :short => 'v'
-           opt :chef, "Chef host:port to redirect to", :type => String
-           opt :listen, "Local host:port to listen on", :type => String, :default => "0.0.0.0:8080"
-           opt :config, "Configuration file to load", :type => String #, :default => "/etc/edmunds-chef-proxy/config.yml"
+           opt :quiet, "Use minimal output", :short => 'q', :default => false
+           opt :verbose, "Output diagnostic info", :short => 'v', :default => false
+           opt :chef, "Chef host:port to redirect to", :type => String, :short => 'c'
+           opt :listen, "Local host:port to listen on", :type => String, :short => 'l', :default => "0.0.0.0:8080"
+           opt :settings, "Configuration file to load (YAML format)", :type => String, :short => 's' #, :default => "/etc/edmunds-chef-proxy/settings.yml"
         end
-        Trollop::die :config, "file must exist" unless File.exist?(opts[:config]) if opts[:config]
+        Trollop::die :settings, "file must exist" unless File.exist?(opts[:settings]) if opts[:settings]
         Trollop::die :chef, "required option" if not opts[:chef]
         Trollop::die :chef, "invalid host:port" if opts[:chef].split(":").count != 2
         Trollop::die :listen, "invalid host:port" if opts[:listen].split(":").count != 2
+
+        # Load settings
+
+        if opts[:settings]
+          Settings.load!(opts[:settings])
+        end
 
         # Start proxy
         
@@ -30,19 +37,19 @@ module Edmunds
 
           # modify / process request stream
           conn.on_data do |data|
-            p [:on_data, data]
+            p [:on_data, data] if opts[:verbose]
             data
           end
 
           # modify / process response stream
           conn.on_response do |backend, resp|
-            p [:on_response, backend, resp]
+            #p [:on_response, backend, resp] if opts[:verbose]
             resp
           end
 
           # termination logic
           conn.on_finish do |backend, name|
-            p [:on_finish, name]
+            p [:on_finish, name] if opts[:verbose]
 
             # terminate connection (in duplex mode, you can terminate when prod is done)
             unbind if backend == :srv
