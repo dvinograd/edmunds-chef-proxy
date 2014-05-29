@@ -12,6 +12,7 @@ module Settings
     newsets.extend DeepSymbolizable
     newsets = newsets.deep_symbolize
     deep_merge!(@_settings, newsets)
+    @_settings
   end
 
   # Deep merging of hashes

@@ -1,7 +1,8 @@
-require "edmunds/chef/proxy/version"
+require "edmunds/chef/proxy/processor"
 require "edmunds/chef/proxy/settings"
-require "trollop"   # command-line option parser
+require "edmunds/chef/proxy/version"
 
+require "trollop"   # command-line option parser
 require "em-proxy"  # proxy library
 
 module Edmunds
@@ -26,31 +27,31 @@ module Edmunds
 
         # Load settings
 
+        settings = {}
         if opts[:settings]
-          Settings.load!(opts[:settings])
+          settings = Settings.load!(opts[:settings])
         end
 
         # Start proxy
-        
+
         ::Proxy.start(:host => opts[:listen].split(":")[0], :port => opts[:listen].split(":")[1], :debug => opts[:verbose]) do |conn|
           conn.server :srv, :host => opts[:chef].split(":")[0], :port => Integer(opts[:chef].split(":")[1])
 
           # modify / process request stream
           conn.on_data do |data|
-            p [:on_data, data] if opts[:verbose]
-            data
+            # p [:on_data, data] if opts[:verbose]
+            ::Edmunds::Chef::Processor.process_request(data, settings)
           end
 
           # modify / process response stream
           conn.on_response do |backend, resp|
-            #p [:on_response, backend, resp] if opts[:verbose]
+            # p [:on_response, backend, resp] if opts[:verbose]
             resp
           end
 
           # termination logic
           conn.on_finish do |backend, name|
-            p [:on_finish, name] if opts[:verbose]
-
+            # p [:on_finish, name] if opts[:verbose]
             # terminate connection (in duplex mode, you can terminate when prod is done)
             unbind if backend == :srv
           end
