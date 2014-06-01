@@ -6,11 +6,6 @@ require "trollop"   # command-line option parser
 require "em-proxy"  # proxy library
 require "http/parser"
 
-require 'mixlib/authentication/http_authentication_request'
-require 'mixlib/authentication/signatureverification'
-require 'ostruct'
-require 'pp'
-
 module Edmunds
   module Chef
     module Proxy
@@ -44,19 +39,8 @@ module Edmunds
           conn.server :srv, :host => opts[:chef].split(":")[0], :port => Integer(opts[:chef].split(":")[1])
 
           @p = Http::Parser.new
-          @allow = false
           @p.on_headers_complete = proc do |h|
-            @allow = false
-            # p [:on_headers_complete, h]
-            request = Struct.new(:env, :method, :path)
-            @request = request.new(h, @p.http_method, @p.request_url)
-            p [:request, @request]
-            #@m = ::Mixlib::Authentication::HTTPAuthenticationRequest.new(request)
-            if @p.request_url =~ /role/
-              @allow = true
-            else
-              @allow = false
-            end
+            @result = ::Edmunds::Chef::Processor.process_request(h, @p, settings)
           end
 
           conn.on_connect do |data,b|
@@ -67,17 +51,23 @@ module Edmunds
           conn.on_data do |data|
             # p [:on_data, data] if opts[:verbose]
             @p << data
-            if @allow
+            if @result[:allow]
               data
             else
-              conn.send_data "HTTP/1.1 403 Forbidden\r\n\r\n"
+              if @result[:reason] == "401"
+                conn.send_data "HTTP/1.1 401 Unauthorized\r\n\r\n"
+              elsif @result[:reason] == "403"
+                conn.send_data "HTTP/1.1 403 Forbidden\r\n\r\n"
+              else
+                conn.send_data "HTTP/1.1 400 Bad Request\r\n\r\n"
+              end
             end
           end
 
           # modify / process response stream
           conn.on_response do |backend, resp|
             # p [:on_response, backend, resp] if opts[:verbose]
-            resp if @allow
+            resp if @result[:allow]
           end
 
           # termination logic
