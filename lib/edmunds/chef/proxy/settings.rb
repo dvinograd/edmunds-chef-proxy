@@ -9,8 +9,8 @@ module Settings
 
   def load!(filename)
     newsets = YAML::load_file(filename)
-    newsets.extend DeepSymbolizable
-    newsets = newsets.deep_symbolize
+    # newsets.extend DeepSymbolizable
+    # newsets = newsets.deep_symbolize
     deep_merge!(@_settings, newsets)
     @_settings
   end

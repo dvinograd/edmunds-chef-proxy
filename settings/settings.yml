@@ -1,17 +1,20 @@
 config:
   user_keys_dir: "/etc/edmunds-chef-proxy/keys/users"
-  readonly_key: "/etc/edmunds-chef-proxy/keys/readonly.pem"
-  readwrite_key: "/etc/edmunds-chef-proxy/keys/readwrite.pem"
+  keys:
+    readonly_client: "proxyreadonly"
+    readonly_key: "/etc/edmunds-chef-proxy/keys/readonly.pem"
+    readwrite_client: "proxyreadwrite"
+    readwrite_key: "/etc/edmunds-chef-proxy/keys/readwrite.pem"
   notifications: "dvinogradov@edmunds.com"
 
 groups:
   readonly:
-    rules: [ "GET *" ]
+    rules: [ { method: "GET", url: ".*"} ]
   hadoop:
-    rules: [ "GET *", 
-             "[PUT|POST|DELETE] /environments/hadoop*", 
-             "[PUT|POST|DELETE] /roles/hadoop*", 
-             "[PUT|POST|DELETE] /cookbooks/hadoop*" ]
+    rules: [ { method: "GET", url: ".*"},
+             { method: "GET|PUT|POST|DELETE", url: "/environments/hadoop.*"},
+             { method: "GET|PUT|POST|DELETE", url: "/roles/hadoop.*"},
+             { method: "GET|PUT|POST|DELETE", url: "/cookbooks/hadoop.*"} ]
 
 users:
   dvinogradov:
