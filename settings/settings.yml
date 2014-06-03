@@ -10,13 +10,23 @@ keys:
 
 groups:
   readonly:
-    rules: [ { method: "GET", url: ".*"} ]
+    rules: [ { method: "GET", url: ".*hadoop.*"} ]
   hadoop:
-    rules: [ { method: "GET", url: ".*"},
-             { method: "GET|PUT|POST|DELETE", url: "/environments/hadoop.*"},
+    rules: [ { method: "GET|PUT|POST|DELETE", url: "/environments/hadoop.*"},
              { method: "GET|PUT|POST|DELETE", url: "/roles/hadoop.*"},
              { method: "GET|PUT|POST|DELETE", url: "/cookbooks/hadoop.*"} ]
 
 users:
+  azadgaonkar:
+    groups: [ readonly, hadoop ]
   dvinogradov:
     groups: [ readonly, hadoop ]
+  ccaywood:
+    groups: [ readonly, hadoop ]
+  ibholat:
+    groups: [ readonly, hadoop ]
+  lchung:
+    groups: [ readonly, hadoop ]
+  sbyrd:
+    groups: [ readonly, hadoop ]
+  
