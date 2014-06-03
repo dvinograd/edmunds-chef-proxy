@@ -62,7 +62,8 @@ module Edmunds
           signed_headers_str << "Host: #{request_host}\r\n"
           signed_headers_str << "Content-Type: application/json\r\n" if request_body
           signed_headers_str << "Content-Length: #{request_body.length}\r\n" if request_body
-          ["X-Ops-Authorization-6", "X-Ops-Authorization-5", "X-Ops-Authorization-4", "X-Ops-Authorization-3", "X-Ops-Authorization-2", "X-Ops-Authorization-1"].each do |key|
+          (1..9).to_a.each do |key|
+            key = "X-Ops-Authorization-#{key}"
             signed_headers_str << "#{key}: #{signed_headers[key]}\r\n" if signed_headers[key]
           end
           signed_headers_str << "\r\n"
