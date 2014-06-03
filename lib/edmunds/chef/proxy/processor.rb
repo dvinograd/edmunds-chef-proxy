@@ -15,7 +15,7 @@ module Edmunds
           # @m = ::Mixlib::Authentication::HTTPAuthenticationRequest.new(request)
 
           user = headers["X-Ops-Userid"]
-          p [:settings_user, user, settings["users"][user]]
+          # p [:settings_user, user, settings["users"][user]]
           unless settings["users"] && settings["users"][user] && settings["users"][user]["groups"]
             return {:allow => false, :reason => "401"}
           end

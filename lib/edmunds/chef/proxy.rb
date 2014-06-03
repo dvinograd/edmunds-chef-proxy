@@ -59,11 +59,14 @@ module Edmunds
           conn.on_data do |data|
             # p [:on_data, data] if $opts[:verbose]
             @p << data
-            if @result[:allow]
+            if @result and @result[:allow]
               p [:chef_request, @chef_request]
               @chef_request
             else
-              if @result[:reason] == "401"
+              if not @result
+                conn.send_data "HTTP/1.1 400 Bad Request\r\n\r\n"
+                conn.close_connection true
+              elsif @result[:reason] == "400"
                 conn.send_data "HTTP/1.1 401 Unauthorized\r\n\r\n"
                 conn.close_connection true
               elsif @result[:reason] == "403"
