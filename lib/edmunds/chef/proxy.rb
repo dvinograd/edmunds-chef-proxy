@@ -40,8 +40,15 @@ module Edmunds
           conn.server :srv, :host => $opts[:chef].split(":")[0], :port => Integer($opts[:chef].split(":")[1])
 
           @p = Http::Parser.new
-          @p.on_headers_complete = proc do |h|
-            @result = ::Edmunds::Chef::Processor.process_request(h, @p.http_method, @p.request_url, $settings)
+          @client_request_body = ''
+          @p.on_body = proc do |chunk|
+            @client_request_body << chunk
+          end
+          @p.on_message_complete = proc do |env|
+            @result = ::Edmunds::Chef::Processor.process_request(@p.headers, @p.http_method, @p.request_url, $settings)
+            if @result[:allow]
+              @chef_request = ::Edmunds::Chef::Processor.create_request(@p.headers, @p.http_method, @p.request_url, $opts[:chef], @client_request_body, $settings)
+            end
           end
 
           conn.on_connect do |data,b|
@@ -53,14 +60,18 @@ module Edmunds
             # p [:on_data, data] if $opts[:verbose]
             @p << data
             if @result[:allow]
-              data
+              p [:chef_request, @chef_request]
+              @chef_request
             else
               if @result[:reason] == "401"
                 conn.send_data "HTTP/1.1 401 Unauthorized\r\n\r\n"
+                conn.close_connection true
               elsif @result[:reason] == "403"
                 conn.send_data "HTTP/1.1 403 Forbidden\r\n\r\n"
+                conn.close_connection true
               else
                 conn.send_data "HTTP/1.1 400 Bad Request\r\n\r\n"
+                conn.close_connection true
               end
             end
           end

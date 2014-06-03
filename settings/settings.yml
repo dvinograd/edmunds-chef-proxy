@@ -1,11 +1,12 @@
 config:
-  user_keys_dir: "/etc/edmunds-chef-proxy/keys/users"
-  keys:
-    readonly_client: "proxyreadonly"
-    readonly_key: "/etc/edmunds-chef-proxy/keys/readonly.pem"
-    readwrite_client: "proxyreadwrite"
-    readwrite_key: "/etc/edmunds-chef-proxy/keys/readwrite.pem"
   notifications: "dvinogradov@edmunds.com"
+
+keys:
+  user_keys_dir: "/etc/edmunds-chef-proxy/keys/users"
+  readonly_client: "proxyreadonly"
+  readonly_key: "/etc/edmunds-chef-proxy/keys/readonly.pem"
+  readwrite_client: "proxyreadwrite"
+  readwrite_key: "/etc/edmunds-chef-proxy/keys/readwrite.pem"
 
 groups:
   readonly:
