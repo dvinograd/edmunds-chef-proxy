@@ -2,6 +2,9 @@ require 'mixlib/authentication/http_authentication_request'
 require 'mixlib/authentication/signatureverification'
 require 'mixlib/authentication/signedheaderauth'
 require 'openssl'
+require 'deep_symbolize'
+
+class Hash; include DeepSymbolizable; end
 
 module Edmunds
   module Chef
@@ -9,18 +12,28 @@ module Edmunds
 
         def self.process_request(headers, http_method, request_path, settings)
 
-          # request = Struct.new(:env, :method, :path)
-          # @request = request.new(h, http_method, request_path)
-          # p [:request, request]
-          # @m = ::Mixlib::Authentication::HTTPAuthenticationRequest.new(request)
+          # Verify request signature
+          req_struct = Struct.new(:env, :method, :path)
+          headers_sym = headers.deep_symbolize { |key| "HTTP_" + key.upcase.gsub("-", "_") }
+          request = req_struct.new(headers_sym, http_method, request_path)
+          m = ::Mixlib::Authentication::SignatureVerification.new(request)
+          username = headers["X-Ops-Userid"]
+          user_key_file = ::File.join(settings["keys"]["user_keys_dir"], username + ".pem")
+          begin
+              user_key = ::OpenSSL::PKey::RSA.new ( ::File.read( user_key_file ) )
+          rescue
+              return {:allow => false, :reason => "401"}
+          end
+          unless m.authenticate_request(user_key)
+              return {:allow => false, :reason => "401"}
+          end
 
-          user = headers["X-Ops-Userid"]
-          # p [:settings_user, user, settings["users"][user]]
-          unless settings["users"] && settings["users"][user] && settings["users"][user]["groups"]
+          # p [:settings_user, username, settings["users"][user]]
+          unless settings["users"] && settings["users"][username] && settings["users"][username]["groups"]
             return {:allow => false, :reason => "401"}
           end
 
-          for group in settings["users"][user]["groups"]
+          for group in settings["users"][username]["groups"]
             for rule in settings["groups"][group]["rules"]
               p [:match_rule, rule]
               if http_method =~ /#{rule["method"]}/ && request_path =~ /#{rule["url"]}/
@@ -42,7 +55,7 @@ module Edmunds
             client = settings["keys"]["readwrite_client"]
             client_key_file = settings["keys"]["readwrite_key"]
           end
-          client_key = OpenSSL::PKey::RSA.new( File.read(client_key_file) )
+          client_key = OpenSSL::PKey::RSA.new( ::File.read(client_key_file) )
           signed_headers = Mixlib::Authentication::SignedHeaderAuth.signing_object(
             :http_method => http_method,
             :body        => request_body || '',
